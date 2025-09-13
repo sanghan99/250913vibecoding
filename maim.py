@@ -45,7 +45,7 @@ if df is not None:
         by=selected_mbti, ascending=False
     ).head(10)
 
-    # Altair 그래프
+    # Altair 그래프 (붉은 계열)
     chart = (
         alt.Chart(top10)
         .mark_bar()
@@ -53,7 +53,7 @@ if df is not None:
             x=alt.X(selected_mbti, title="비율", axis=alt.Axis(format="%")),
             y=alt.Y(country_col, sort="-x"),
             tooltip=[country_col, selected_mbti],
-            color=alt.Color(selected_mbti, scale=alt.Scale(scheme="tealblues")),
+            color=alt.Color(selected_mbti, scale=alt.Scale(scheme="reds")),
         )
         .properties(width=700, height=400, title=f"{selected_mbti} 비율 Top 10 국가")
     )
