@@ -1,52 +1,67 @@
 import streamlit as st
-st.title('나의 첫 웹앱')
-st.write('이걸 내가 만들었다고?')
-import streamlit as st
-import random
+import pandas as pd
+import altair as alt
+import os
 
-# MBTI별 연애 추천 문구 💘
-recommendations = {
-    "INTJ": "✨ 전략적이고 진지한 당신! 계획적인 데이트와 깊은 대화를 즐기는 파트너가 잘 맞아요 🧠❤️",
-    "INTP": "🌀 자유로운 영혼! 창의적인 데이트(보드게임, 전시회)에서 두뇌 자극 대화가 최고 🖼️🎲",
-    "ENTJ": "🔥 리더십 강한 당신! 주도적으로 여행✈️이나 액티비티를 기획하면 매력 200%",
-    "ENTP": "🤣 유머감각 폭발! 깜짝 이벤트와 장난꾸러기 같은 데이트가 찰떡 🎭🎉",
-    "INFJ": "💫 영혼의 교감! 조용한 카페에서 진심 어린 대화와 깊은 눈맞춤 ☕💞",
-    "INFP": "🌸 순수하고 감성적! 손편지💌, 별 보며 산책🌌 같은 로맨틱 무드가 어울려요",
-    "ENFJ": "🤝 배려심 넘치는 리더! 파트너를 위한 이벤트 서프라이즈🎁가 찰떡",
-    "ENFP": "🌈 모험심 가득! 즉흥 여행🚗, 페스티벌🎶에서 에너지가 폭발",
-    "ISTJ": "📅 성실한 책임감! 안정적인 루틴 데이트(맛집 탐방🍜, 주말 산책🚶‍♂️)이 잘 맞아요",
-    "ISFJ": "🛡️ 따뜻한 수호자! 세심한 배려가 돋보이는 핸드메이드 선물🎀",
-    "ESTJ": "🏆 추진력 만점! 팀플 데이트(쿠킹 클래스🍳, 스포츠 경기⚽)에 강해요",
-    "ESFJ": "🎀 사랑꾼! 다 같이 어울리는 파티🎉, 친구와 함께하는 더블데이트도 굿",
-    "ISTP": "🛠️ 현실주의 모험가! 드라이브🚗, 액티비티 스포츠(클라이밍 🧗‍♂️)가 어울려요",
-    "ISFP": "🎨 감성 아티스트! 전시회🖌️, 감성 카페☕, 소소한 피크닉🍱",
-    "ESTP": "⚡ 에너지 폭발! 클럽🎶, 놀이공원🎢, 즉흥 여행✈️에서 매력 발산",
-    "ESFP": "🌟 파티의 중심! 노래방🎤, 댄스파티💃, 불꽃놀이🎆 데이트가 찰떡"
-}
+st.set_page_config(page_title="MBTI 국가별 비율 Top 10", layout="wide")
+st.title("🌍 MBTI 유형별 국가 Top 10 분석")
 
-# 페이지 설정 🎨
-st.set_page_config(page_title="MBTI 연애 추천기", page_icon="💘", layout="centered")
+# 파일 경로 설정
+default_path = "countriesMBTI_16types.csv"
+df = None
 
-st.title("💘 MBTI 유형별 연애 추천기 💘")
-st.markdown("""
-### 당신의 MBTI 유형을 선택하면, 찰떡궁합 연애법을 추천해드려요 ✨
-이모지 듬뿍 넣어서 귀엽고 재밌게~ 🥰
-""")
+# 1️⃣ 기본 파일이 같은 폴더에 있으면 자동으로 불러오기
+if os.path.exists(default_path):
+    st.success(f"기본 데이터 파일을 불러왔습니다: {default_path}")
+    df = pd.read_csv(default_path)
+else:
+    # 2️⃣ 없으면 업로드 기능 사용
+    uploaded_file = st.file_uploader("📂 CSV 파일 업로드", type=["csv"])
+    if uploaded_file:
+        df = pd.read_csv(uploaded_file)
 
-# MBTI 선택 🎯
-mbti_types = list(recommendations.keys())
-selected = st.selectbox("당신의 MBTI는 무엇인가요?", ["선택하기"] + mbti_types)
+if df is not None:
+    # MBTI 컬럼들 자동 감지
+    mbti_types = [
+        "INTJ","INTP","ENTJ","ENTP",
+        "INFJ","INFP","ENFJ","ENFP",
+        "ISTJ","ISFJ","ESTJ","ESFJ",
+        "ISTP","ISFP","ESTP","ESFP"
+    ]
+    country_col = "Country"
+    mbti_cols = [c for c in df.columns if c in mbti_types]
 
-# 버튼 클릭 시 추천 🥳
-if selected != "선택하기":
-    if st.button("💘 나의 연애 스타일 확인하기 💘"):
-        st.success(recommendations[selected])
+    # 국가별 총합 및 비율 계산
+    df["_total"] = df[mbti_cols].sum(axis=1)
+    df_pct = df.copy()
+    for c in mbti_cols:
+        df_pct[c] = df_pct[c] / df_pct["_total"]
 
-        # 재미있는 효과 랜덤 🎉
-        effects = [st.balloons, st.snow, st.toast]
-        effect = random.choice(effects)
-        
-        if effect == st.toast:
-            effect("✨ 사랑은 바로 지금부터 시작! ✨")
-        else:
-            effect()
+    # 선택 박스: MBTI 유형
+    selected_mbti = st.selectbox("🔎 MBTI 유형 선택", mbti_cols)
+
+    # 선택한 MBTI 비율 Top 10 국가
+    top10 = df_pct[[country_col, selected_mbti]].sort_values(
+        by=selected_mbti, ascending=False
+    ).head(10)
+
+    # Altair 그래프
+    chart = (
+        alt.Chart(top10)
+        .mark_bar()
+        .encode(
+            x=alt.X(selected_mbti, title="비율", axis=alt.Axis(format="%")),
+            y=alt.Y(country_col, sort="-x"),
+            tooltip=[country_col, selected_mbti],
+            color=alt.Color(selected_mbti, scale=alt.Scale(scheme="tealblues")),
+        )
+        .properties(width=700, height=400, title=f"{selected_mbti} 비율 Top 10 국가")
+    )
+
+    st.altair_chart(chart, use_container_width=True)
+
+    # 데이터 테이블 표시
+    st.dataframe(top10.set_index(country_col).style.format({selected_mbti: "{:.2%}"}))
+
+else:
+    st.warning("⚠️ 기본 데이터 파일이 없으며, 업로드된 파일도 없습니다. CSV를 업로드해주세요.")
